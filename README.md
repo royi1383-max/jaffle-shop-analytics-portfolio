@@ -10,8 +10,9 @@ The base Jaffle Shop template provides the raw seed data, a minimal staging laye
 
 - **dbt analytics layer** — 6 additional models (`models/marts/analytics/`) + 27 tests on top of the base staging models
 - **SQL analyses** (`analyses/`) — 6 business-question-driven queries: revenue trends, cohort retention, product BCG quadrant, location benchmarking, RFM segmentation, supply margin erosion
-- **Streamlit dashboard** (`dashboard/`) — 7 pages: Overview, Revenue, Customers, Products, Locations, Segmentation, **Predictions**
+- **Streamlit dashboard** (`dashboard/`) — 8 pages: Overview, Revenue, Customers, Products, Locations, Segmentation, Predictions, **Ask the Data**
 - **Predictive models** (`python/04_churn_model.py`, `05_ltv_forecast.py`, `06_revenue_diagnostics.py`) — churn classification with SHAP explanations, BG/NBD + Gamma-Gamma lifetime value forecasting, STL-based revenue anomaly detection
+- **Text-to-SQL** (`dashboard/pages/7_Ask_the_Data.py`, `python/utils/text_to_sql.py`) — ask a question in plain English, Claude writes a SQL query against the marts/analytics tables and DuckDB runs it. Runs on a read-only DB connection and rejects any non-SELECT statement before execution, so generated SQL can't modify data even if it tried to. Requires `ANTHROPIC_API_KEY` in `.env` (see `.env.example`)
 - **Python utilities** (`python/`) — DB connector, plotting theme, shared model code, health-check/exploration scripts
 
 ### Key findings from the analysis
