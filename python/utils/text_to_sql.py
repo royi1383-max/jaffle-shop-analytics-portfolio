@@ -54,6 +54,7 @@ def get_schema_summary() -> str:
             order by table_name, ordinal_position
             """
         ).fetchdf()
+        date_bounds = con.execute("select min(ordered_at), max(ordered_at) from orders").fetchone()
 
     df = df[df["table_name"].isin(QUERYABLE_TABLES)]
     lines = []
@@ -63,7 +64,17 @@ def get_schema_summary() -> str:
             continue
         col_list = ", ".join(f"{r.column_name} ({r.data_type})" for r in cols.itertuples())
         lines.append(f"- {table}: {col_list}")
-    return "\n".join(lines)
+
+    schema_text = "\n".join(lines)
+    min_date, max_date = date_bounds
+    schema_text += (
+        f"\n\nDataset date range: {min_date} to {max_date}. This is a fixed historical "
+        f"dataset, not a live feed — it does not extend to today's real-world date. "
+        f"Interpret relative time phrases like \"last month\", \"this year\", or "
+        f"\"recently\" relative to {max_date} (the dataset's own most recent date), "
+        f"never relative to the real current date."
+    )
+    return schema_text
 
 
 def _extract_sql(raw: str) -> str:
