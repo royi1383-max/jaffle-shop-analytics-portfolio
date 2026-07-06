@@ -138,6 +138,12 @@ with tab1:
 # ── TAB 2: ELBOW METHOD ───────────────────────────────────────────
 with tab2:
     st.subheader("Finding the Optimal Number of Clusters")
+    st.caption(
+        "See the 📖 Methodology page for what the elbow method and silhouette "
+        "score actually measure — short version: the elbow chart looks for "
+        "diminishing returns as k grows, the silhouette chart looks for how "
+        "cleanly separated the resulting clusters are."
+    )
 
     elbow = elbow_data()
     col1, col2 = st.columns(2)
@@ -190,6 +196,17 @@ with tab3:
 
     st.subheader("Cluster Profiles (k=4)")
     st.dataframe(profile, use_container_width=True, hide_index=True)
+
+    best = profile.loc[profile["avg_spend"].idxmax()]
+    weakest = profile.loc[profile["avg_recency"].idxmax()]
+    st.info(
+        f"💡 **{best['cluster']}** has the highest average spend (${best['avg_spend']:.0f}) "
+        f"and is the closest data-driven match to RFM's \"Champions\" segment. "
+        f"**{weakest['cluster']}** has gone the longest without ordering "
+        f"({weakest['avg_recency']:.0f} days on average) — the closest match to \"At Risk\"/\"Lost.\" "
+        f"Unlike RFM, K-Means found these groupings purely from the data, with no rules "
+        f"about what \"good\" or \"bad\" looks like written in advance."
+    )
 
     # Radar per cluster
     dims = ["avg_recency", "avg_frequency", "avg_spend", "avg_food_pct"]

@@ -65,16 +65,32 @@ with tab1:
                   annotation_text=f"Median ${med_rev:,.0f}",
                   annotation_position="top right")
 
-    # Label each dot
-    for _, row in products.iterrows():
+    # Label each dot with its full name. Alternate the label above/below the
+    # point so two products that are close together (e.g. similar revenue and
+    # margin) don't have their labels collide into each other.
+    for i, (_, row) in enumerate(products.iterrows()):
         fig.add_annotation(
             x=row["total_revenue"], y=row["gross_margin_pct"],
-            text=row["product_name"].split(" ")[0],
-            showarrow=False, yshift=14,
+            text=row["product_name"],
+            showarrow=False, yshift=16 if i % 2 == 0 else -16,
             font=dict(size=10, color="gray"),
         )
-    fig.update_layout(height=520)
+    # Pad the x-axis so edge points and their labels aren't clipped by the plot border
+    x_pad = (products["total_revenue"].max() - products["total_revenue"].min()) * 0.12
+    fig.update_xaxes(range=[products["total_revenue"].min() - x_pad,
+                             products["total_revenue"].max() + x_pad])
+    fig.update_layout(height=580, margin=dict(t=60))
     st.plotly_chart(fig, use_container_width=True)
+
+    st.info(
+        "💡 **How to read this:** each axis is split at the median, creating four "
+        "quadrants. **Stars** (top-right) are your best products — high revenue "
+        "*and* high margin. **Cash Cows** (bottom-right) sell well but at tighter "
+        "margins — worth checking if supply costs can be trimmed. **Question Marks** "
+        "(top-left) are high-margin but low-volume — good bundling candidates. "
+        "**Dogs** (bottom-left) are weak on both dimensions and are the first "
+        "place to look for pricing or menu changes."
+    )
 
     # Quadrant summary
     quad_summary = products.groupby("quadrant").agg(
@@ -111,6 +127,9 @@ with tab2:
         )
         fig2.update_traces(textposition="outside")
         fig2.update_layout(showlegend=True)
+        # Headroom on the right so the "%" labels on the highest-margin bars
+        # aren't clipped by the plot edge.
+        fig2.update_xaxes(range=[0, products["gross_margin_pct"].max() * 1.15])
         st.plotly_chart(fig2, use_container_width=True)
 
     with col2:

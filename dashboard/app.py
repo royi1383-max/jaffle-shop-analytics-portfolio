@@ -96,10 +96,21 @@ WHERE o.ordered_at BETWEEN
 st.title("Executive Overview")
 
 c1, c2, c3, c4, c5 = st.columns(5)
+
+# The dataset only spans one year (Sep 2024 - Aug 2025), so "prior period"
+# (same range, shifted back a year) falls entirely outside it and SUM()
+# returns NULL/NaN — checking `if prev['revenue']` doesn't catch that, since
+# NaN is truthy in Python. Use pd.notna() so the delta is hidden instead of
+# showing a broken "nan%".
+has_prior_revenue = pd.notna(prev["revenue"]) and prev["revenue"] > 0
+has_prior_orders  = pd.notna(prev["orders"])  and prev["orders"]  > 0
+
 c1.metric("Revenue",       f"${overview['revenue']:,.0f}",
-          delta=f"{((overview['revenue']-prev['revenue'])/max(prev['revenue'],1)*100):.0f}% vs prior period" if prev['revenue'] else None)
+          delta=f"{((overview['revenue']-prev['revenue'])/prev['revenue']*100):.0f}% vs prior period" if has_prior_revenue else None,
+          help="No prior-period data available — the dataset doesn't extend back a full year." if not has_prior_revenue else None)
 c2.metric("Orders",        f"{overview['orders']:,}",
-          delta=f"{((overview['orders']-prev['orders'])/max(prev['orders'],1)*100):.0f}%" if prev['orders'] else None)
+          delta=f"{((overview['orders']-prev['orders'])/prev['orders']*100):.0f}%" if has_prior_orders else None,
+          help="No prior-period data available — the dataset doesn't extend back a full year." if not has_prior_orders else None)
 c3.metric("Customers",     f"{int(overview['customers']):,}")
 c4.metric("Avg Order",     f"${overview['aov']:.2f}")
 c5.metric("Gross Margin",  f"{overview['margin_pct']:.1f}%")
@@ -205,4 +216,7 @@ with col4:
         title="Order Composition (size = AOV)",
     )
     fig3.update_traces(textposition="outside")
+    # Headroom on the right so "AOV $X" labels on the longest bar aren't
+    # clipped by the plot edge (this was showing as truncated to "AC").
+    fig3.update_xaxes(range=[0, order_type["orders"].max() * 1.2])
     st.plotly_chart(fig3, use_container_width=True)

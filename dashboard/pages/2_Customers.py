@@ -97,19 +97,32 @@ with tab2:
 
     col1, col2 = st.columns(2)
     with col1:
+        median_spend = ltv["lifetime_spend"].median()
+        mean_spend = ltv["lifetime_spend"].mean()
+
+        # Median and mean sit close together on this scale — putting both as
+        # line annotations collided into an unreadable jumble no matter how
+        # they were staggered, at any chart width. Showing them as metrics
+        # above the chart instead of on it sidesteps the problem entirely.
+        mcol1, mcol2 = st.columns(2)
+        mcol1.metric("Median lifetime spend", f"${median_spend:,.0f}")
+        mcol2.metric("Mean lifetime spend", f"${mean_spend:,.0f}")
+
         fig3 = px.histogram(
             ltv, x="lifetime_spend", nbins=50,
             color_discrete_sequence=["#4C78A8"],
             title="Customer LTV Distribution",
             labels={"lifetime_spend": "Lifetime Spend ($)", "count": "Customers"},
         )
-        fig3.add_vline(x=ltv["lifetime_spend"].median(), line_dash="dash",
-                       line_color="#F58518",
-                       annotation_text=f"Median ${ltv['lifetime_spend'].median():.0f}")
-        fig3.add_vline(x=ltv["lifetime_spend"].mean(), line_dash="dot",
-                       line_color="#E45756",
-                       annotation_text=f"Mean ${ltv['lifetime_spend'].mean():.0f}")
+        fig3.add_vline(x=median_spend, line_dash="dash", line_color="#F58518")
+        fig3.add_vline(x=mean_spend, line_dash="dot", line_color="#E45756")
         st.plotly_chart(fig3, use_container_width=True)
+        st.caption(
+            "💡 The mean sits well above the median — a small number of very "
+            "high-spend customers pull the average up. Use the median as the "
+            "'typical' customer, and see the Pareto curve below for how "
+            "concentrated that high-end spend really is."
+        )
 
     with col2:
         bucket_summary = ltv.groupby("ltv_bucket").agg(
@@ -167,6 +180,12 @@ with tab2:
         showlegend=False, height=380,
     )
     st.plotly_chart(fig5, use_container_width=True)
+    st.info(
+        f"💡 The top 20% of customers by spend account for **{pareto_val:.0f}% of total "
+        f"revenue** — the closer the blue curve hugs the top-left corner, the more "
+        f"revenue is concentrated in a small group. A perfectly equal business (every "
+        f"customer spends the same) would follow the dotted diagonal exactly."
+    )
 
 # ── TAB 3: RFM SEGMENTATION ───────────────────────────────────────
 with tab3:
@@ -242,7 +261,19 @@ with tab3:
         )
         fig7.update_layout(showlegend=False, height=450)
         fig7.update_traces(textposition="outside")
+        # Extra headroom on the right so the "outside" % labels on the
+        # longest bar (Champions) aren't clipped by the plot edge.
+        fig7.update_xaxes(range=[0, seg_summary["total_revenue"].max() * 1.18])
         st.plotly_chart(fig7, use_container_width=True)
+
+    top2 = seg_summary.sort_values("revenue_pct", ascending=False).head(2)
+    st.info(
+        f"💡 **{top2.iloc[0]['rfm_segment']}** and **{top2.iloc[1]['rfm_segment']}** "
+        f"together are just {top2['customers'].sum()} of {seg_summary['customers'].sum()} "
+        f"customers ({top2['customers'].sum() / seg_summary['customers'].sum():.0%}) but drive "
+        f"{top2['revenue_pct'].sum():.0f}% of total revenue — the segment action table below "
+        f"prioritizes retaining these two groups above all else."
+    )
 
     st.subheader("Segment Action Table")
     action_map = {
