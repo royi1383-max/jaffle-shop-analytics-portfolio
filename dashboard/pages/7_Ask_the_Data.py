@@ -63,8 +63,9 @@ if st.button("Ask", type="primary", disabled=not question.strip()):
         st.dataframe(df, use_container_width=True, hide_index=True)
 
         # Quick auto-chart when the shape looks chartable: one categorical/date
-        # column plus one numeric column.
-        if 1 < len(df.columns) <= 3 and len(df) > 1:
+        # column plus one numeric column, and few enough rows to actually read
+        # (e.g. "list all 935 customers" would render 935 unreadable x-axis labels).
+        if 1 < len(df.columns) <= 3 and 1 < len(df) <= 50:
             numeric_cols = df.select_dtypes(include="number").columns.tolist()
             other_cols = [c for c in df.columns if c not in numeric_cols]
             if numeric_cols and other_cols:
