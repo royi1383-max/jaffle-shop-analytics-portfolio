@@ -51,9 +51,17 @@ models:
 
   - name: fct_customer_churn_features
     description: >
-      Feature table for churn prediction ML model. One row per customer.
-      Includes RFM signals, ordering cadence, product preference, and
-      a binary churn label (no order in 90+ days = churned).
+      Feature table for churn prediction ML model. One row per customer who
+      had ordered before the cutoff date (dataset end minus 30 days).
+      Includes RFM signals, ordering cadence, and product preference, all
+      computed as of that cutoff — plus a churn label based on a genuine
+      30-day holdout window that follows it. A naive "no order in the last
+      90 days" label measured against the true end of the dataset produced
+      only 1 churned customer out of 935, since this customer base orders
+      every 3-6 days on average and the dataset simply ends while the
+      business is still fully active — there's no room for anyone to go
+      quiet near the edge. The holdout-window approach checks real future
+      behavior instead and yields an 18% churn rate.
     columns:
       - name: customer_id
         description: Primary key
@@ -61,13 +69,13 @@ models:
           - not_null
           - unique
       - name: is_churned
-        description: True if days_since_last_order > 90
+        description: True if the customer placed no orders in the 30-day holdout window after the cutoff date
         data_tests:
           - not_null
           - accepted_values:
               values: [true, false]
       - name: days_since_last_order
-        description: Days between last order and the most recent order in the dataset
+        description: Days between the customer's last order and the cutoff date (dataset end minus 30 days)
         data_tests:
           - not_null
           - dbt_utils.expression_is_true:

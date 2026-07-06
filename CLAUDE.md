@@ -9,7 +9,7 @@
 - [x] Phase 1 — dbt analytics layer (6 models חדשים + 27 tests)
 - [x] Phase 2 — SQL Analyses (6 קבצים ב-analyses/)
 - [x] Phase 3 — Streamlit Dashboard (5 דפים: Overview, Revenue, Customers, Products, Locations, Segmentation)
-- [ ] Phase 4 — Predictive Models (Churn + LTV)
+- [x] Phase 4 — Predictive Models (Churn + LTV) — ראה "ממצאים עיקריים" למטה, כולל שני באגים מתודולוגיים שנתפסו ותוקנו
 - [ ] Phase 5 — Google Sheets export
 - [ ] Phase 6 — Power BI (.pbix)
 - [ ] Phase 7 — Notion storytelling
@@ -81,13 +81,17 @@ python python/explore_data.py  # ממצאים מרכזיים ב-terminal
 5. "Cannot Lose Them" — 82 לקוחות עם avg spend $998 שלא הזמינו לאחרונה
 6. nutellaphone — margin 89% אבל volume נמוך (Question Mark → הזדמנות)
 7. chai and mighty — perishable risk 29% (הכי גבוה = סיכון בזבוז)
+8. **churn label היה שבור** — הגדרה מקורית (90 יום מסוף הדאטהסט) הניבה churned אחד מתוך 935 לקוחות, כי הלקוחות מזמינים כל 3-6 ימים והדאטהסט פשוט נגמר באמצע פעילות. תוקן עם holdout window אמיתי של 30 יום → 18% churn rate תקין
+9. **פיצ'רים טאוטולוגיים נתפסו** — מודל ראשוני עם `orders_last_30_days` וכו' נתן ~100% ROC-AUC (חשוד מדי). התברר ש-`orders_last_30_days == 0` מנבא churn ב-97% מהמקרים לבד — לא סיגנל מוקדם, רק חזרה על התווית. הוסר, נשאר עם פיצ'רים התנהגותיים בלבד (עדיין ~99% AUC — כנראה בגלל שהדאטה הסינתטי בנוי מכמה ארכיטיפים ברורים של לקוחות)
+10. churned לקוחות נוטים ליותר food (33% לעומת 18%) ול-AOV נמוך יותר — לקוחות "הרגל שתייה" נאמנים יותר
 
 ## packages מותקנים
 dbt-duckdb, duckdb, pandas, numpy, matplotlib, seaborn, plotly,
 streamlit, scikit-learn, lifetimes, shap, statsmodels, jupyter
 
-## מה הלאה (Phase 4)
+## Phase 4 — הושלם
 - python/04_churn_model.py — Logistic Regression + Random Forest + SHAP values
 - python/05_ltv_forecast.py — BG/NBD model + Gamma-Gamma
-- python/06_revenue_diagnostics.py — anomaly detection
+- python/06_revenue_diagnostics.py — STL decomposition + z-score anomaly detection (18 ימים חריגים מתוך 365)
 - dashboard/pages/6_Predictions.py — churn threshold slider + LTV forecast
+- models/marts/analytics/fct_customer_churn_features.sql — נבנה מחדש עם holdout window methodology
