@@ -32,7 +32,7 @@ SELECT date_trunc('month', o.ordered_at) AS month,
        COUNT(DISTINCT o.customer_id)     AS customers,
        datediff('month', l.opened_date, date_trunc('month', o.ordered_at)) AS months_since_open
 FROM orders o JOIN locations l USING (location_id)
-GROUP BY 1,2 ORDER BY 1
+GROUP BY 1,2,l.opened_date ORDER BY 1
 """)
 loc_monthly["month"] = pd.to_datetime(loc_monthly["month"])
 
@@ -156,6 +156,11 @@ with tab3:
     categories = list(dims.keys())
     colors = ["#4C78A8", "#F58518"]
 
+    def _hex_to_rgba(hex_color: str, alpha: float = 0.2) -> str:
+        h = hex_color.lstrip("#")
+        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+        return f"rgba({r},{g},{b},{alpha})"
+
     fig5 = go.Figure()
     for i, row in radar_df.iterrows():
         vals = [row[v] for v in dims.values()]
@@ -165,9 +170,7 @@ with tab3:
             r=vals_closed, theta=cats_closed,
             fill="toself", name=row["location_name"],
             line=dict(color=colors[i % len(colors)]),
-            fillcolor=colors[i % len(colors)].replace(")", ",0.2)").replace("rgb", "rgba")
-                if "rgb" in colors[i % len(colors)]
-                else colors[i % len(colors)] + "33",
+            fillcolor=_hex_to_rgba(colors[i % len(colors)]),
         ))
     fig5.update_layout(
         polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
