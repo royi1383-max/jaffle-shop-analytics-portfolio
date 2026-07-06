@@ -1,0 +1,128 @@
+version: 2
+
+models:
+  - name: fct_daily_revenue
+    description: >
+      Daily revenue aggregated by location. Includes gross profit, order type mix
+      (food/drink/mixed), and new vs. returning customer breakdown.
+      Primary model for time-series revenue analysis.
+    columns:
+      - name: date_day
+        description: Date of orders (truncated to day)
+        data_tests:
+          - not_null
+      - name: location_id
+        description: Foreign key to locations
+        data_tests:
+          - not_null
+      - name: total_revenue
+        description: Sum of order_total for all orders on this day at this location
+        data_tests:
+          - not_null
+      - name: gross_profit
+        description: total_revenue minus total_cost
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: fct_cohorts
+    description: >
+      Customer cohort retention analysis. Each row represents a cohort (defined by
+      acquisition month) and their activity in a subsequent month.
+      Use to build retention heatmaps and average retention curves.
+    columns:
+      - name: cohort_month
+        description: Month the cohort was first acquired
+        data_tests:
+          - not_null
+      - name: months_since_first_order
+        description: 0 = acquisition month, 1 = first month after, etc.
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: retention_rate
+        description: Fraction of original cohort still active in this month (0.0 to 1.0)
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "between 0 and 1"
+
+  - name: fct_customer_churn_features
+    description: >
+      Feature table for churn prediction ML model. One row per customer.
+      Includes RFM signals, ordering cadence, product preference, and
+      a binary churn label (no order in 90+ days = churned).
+    columns:
+      - name: customer_id
+        description: Primary key
+        data_tests:
+          - not_null
+          - unique
+      - name: is_churned
+        description: True if days_since_last_order > 90
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+      - name: days_since_last_order
+        description: Days between last order and the most recent order in the dataset
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: fct_product_performance
+    description: >
+      Monthly product-level revenue, supply cost, and gross margin.
+      Includes revenue rank within each month for easy top/bottom analysis.
+    columns:
+      - name: product_id
+        description: Product identifier
+        data_tests:
+          - not_null
+      - name: month
+        description: First day of the calendar month
+        data_tests:
+          - not_null
+      - name: gross_margin_pct
+        description: Gross profit as a percentage of revenue
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: "between -100 and 100"
+
+  - name: fct_location_performance
+    description: >
+      Location-level performance summary with age-normalized revenue metrics.
+      Use for cross-location benchmarking that accounts for how long each store
+      has been open.
+    columns:
+      - name: location_id
+        description: Primary key
+        data_tests:
+          - not_null
+          - unique
+      - name: revenue_per_month_open
+        description: Total revenue divided by months the location has been open
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+
+  - name: fct_supply_cogs
+    description: >
+      Product-level cost of goods sold (COGS) analysis. Breaks down supply cost
+      into perishable vs. non-perishable to identify margin risk from waste.
+    columns:
+      - name: product_id
+        description: Primary key
+        data_tests:
+          - not_null
+          - unique
+      - name: gross_margin_pct
+        description: Gross profit as a percentage of revenue
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "between -100 and 100"

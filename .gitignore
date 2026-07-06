@@ -1,0 +1,24 @@
+.venv
+venv
+.env
+env
+
+target/
+dbt_packages/
+logs/
+profiles.yml
+
+.DS_Store
+
+.user.yml
+
+.ruff_cache
+__pycache__
+
+# Generated DB and exports — regenerate with `dbt build` + the export script
+*.duckdb
+*.duckdb.wal
+exports/
+
+# dbt Cloud CI/CD workflows — not applicable to this local/DuckDB setup
+.github/workflows/
