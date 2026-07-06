@@ -69,8 +69,8 @@ with tab1:
         title="Average Retention Curve (across all cohorts)",
         color_discrete_sequence=["#4C78A8"],
     )
-    fig2.add_hrule = fig2.add_hline(y=90, line_dash="dot", line_color="green",
-                                     annotation_text="90% threshold")
+    fig2.add_hline(y=90, line_dash="dot", line_color="green",
+                   annotation_text="90% threshold")
     fig2.update_yaxes(range=[0, 105])
     st.plotly_chart(fig2, use_container_width=True)
 
